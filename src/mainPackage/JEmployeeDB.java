@@ -1,6 +1,7 @@
 package mainPackage;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -11,10 +12,13 @@ import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 
@@ -27,8 +31,8 @@ public class JEmployeeDB implements ActionListener{
 	private Border blackline = BorderFactory.createLineBorder(Color.black);	
 // Frames	
 	private JFrame loginFrame = new JFrame("Employee Database");
-	private JFrame menuFrame = new JFrame("Employee Database - Menu");
 	private JFrame createFormFrame = new JFrame ("Employee Database - Create");
+	private JFrame searchFrame = new JFrame ("Employee Database - Search");
 // GridBagConstraint
 	GridBagConstraints GBC = new GridBagConstraints();
 // Login Frame variables
@@ -37,7 +41,6 @@ public class JEmployeeDB implements ActionListener{
 	private JButton loginButton = new JButton("Login");
 // Menu Frame Variables
 	private JButton createEmployee = new JButton("Create");
-	private JButton searchEmployee = new JButton("Search");
 	private JButton logOff = new JButton("Log Off");
 // Create Frame Variables
 	private JLabel fNameLabel = new JLabel("First Name:");
@@ -57,7 +60,6 @@ public class JEmployeeDB implements ActionListener{
 		public void startGUI() 
 		{
 			loginGUI(); // Call the loginGUI
-			menuGUI(); // Call the menuGUI
 			createFormGUI(); // call createGUI
 			searchGUI(); // call display GUI
 			editGUI(); // call editGUI
@@ -110,47 +112,6 @@ public class JEmployeeDB implements ActionListener{
 				loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 				loginFrame.setSize(FRAMEX, FRAMEY);
 				loginFrame.setVisible(true);
-		}
-	// Menu GUI-----------------------------------------------------------------------------------------------------------------------
-		private void menuGUI()
-		{
-		// Background Panel	
-				JPanel backgroundPanel = new JPanel(new GridBagLayout());
-				backgroundPanel.setBackground(Color.WHITE);
-				menuFrame.add(backgroundPanel);
-		// Title Panel		
-				JPanel titlePanel = new JPanel();
-				GBC.gridx = 0;
-				GBC.gridy = 0;
-				GBC.gridheight = 1;
-				GBC.gridwidth = 1;
-				GBC.insets = new Insets(15, 15, 15, 15);
-				titlePanel.setBackground(Color.GRAY);
-				titlePanel.setBorder(blackline);
-				backgroundPanel.add(titlePanel, GBC);
-			// Title panel Body
-				final JLabel TITLELABEL = new JLabel("Welcome: ");
-				TITLELABEL.setFont(new Font("times", Font.BOLD, 24));
-				titlePanel.add(TITLELABEL);		
-		// Option Panel
-				JPanel optionPanel = new JPanel(new GridLayout(1, 3));
-				GBC.gridx = 0;
-				GBC.gridy = 2;
-				GBC.ipadx = 255;
-				GBC.ipady = 25;
-				GBC.insets = new Insets(15, 15, 15, 15);
-				optionPanel.setBorder(blackline);
-				backgroundPanel.add(optionPanel, GBC);	
-			// Option Panel Body
-				optionPanel.add(createEmployee);
-				createEmployee.addActionListener(this);
-				optionPanel.add(searchEmployee);
-				searchEmployee.addActionListener(this);
-				optionPanel.add(logOff);
-				logOff.addActionListener(this);
-		// Frame stuff		
-				menuFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-				menuFrame.setSize(FRAMEX,FRAMEY);
 		}
 	// Create GUI---------------------------------------------------------------------------------------------------------------------
 		private void createFormGUI()
@@ -212,7 +173,87 @@ public class JEmployeeDB implements ActionListener{
 	// Display GUI--------------------------------------------------------------------------------------------------------------------
 		private void searchGUI() 
 		{
-			
+		// Background Panel	
+				JPanel backgroundPanel = new JPanel(new GridBagLayout());
+				backgroundPanel.setBackground(Color.WHITE);
+				searchFrame.add(backgroundPanel);
+		// Title Panel		
+				JPanel titlePanel = new JPanel(new GridLayout(1,4));
+				GBC.gridx = 0;
+				GBC.gridy = 0;
+				GBC.gridheight = 1;
+				GBC.gridwidth = 1;
+				GBC.ipadx = 0;
+				GBC.ipady = 0;
+				GBC.insets = new Insets(15, 15, 15, 15);
+				titlePanel.setBackground(Color.GRAY);
+				titlePanel.setBorder(blackline);
+				backgroundPanel.add(titlePanel, GBC);
+			// Title Label
+				final JLabel TITLELABEL = new JLabel("Search Employee");
+				TITLELABEL.setFont(new Font("times", Font.BOLD, 24));
+				titlePanel.add(TITLELABEL);	
+		// Button Panel
+				JPanel buttonPanel = new JPanel(new GridLayout(1,4));
+				GBC.gridx = 0;
+				GBC.gridy = 1;
+				GBC.ipadx = 150;
+				GBC.ipady = 15;
+				backgroundPanel.add(buttonPanel, GBC);
+			// Button
+
+				buttonPanel.add(createEmployee);
+				createEmployee.addActionListener(this);
+				JButton editEmployee = new JButton("Edit");
+				buttonPanel.add(editEmployee);
+				JButton deleteEmployee = new JButton("Delete");
+				buttonPanel.add(deleteEmployee);
+				buttonPanel.add(logOff);
+				logOff.addActionListener(this);
+		// Java Table Panel
+				JPanel tablePanel = new JPanel();
+				GBC.gridx = 0;
+				GBC.gridy = 2;
+				GBC.ipadx = 0;
+				GBC.ipady = 0;
+			    String data[][]=
+			    		{ {"101","Amit","670000"},    
+                        {"102","Jai","780000"},    
+                        {"103","Joe","700000"},
+                        {"104","Sky","700000"},
+                        {"105","Tony","512300"},
+                        {"106","Match","700000"},
+                        {"107","Mavin","52100"},
+                        {"108","Almat","700000"},
+                        {"109","El tigo","700000"},
+                        {"110","Morn","2000"}
+                        };    
+				String column[]={"ID","NAME","SALARY"};         
+				JTable eTable =new JTable(data,column);
+				//jt.setPreferredScrollableViewportSize(jt.getPreferredSize());
+				JScrollPane scroll=new JScrollPane(eTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED); 
+				scroll.setPreferredSize(new Dimension(500, 120));
+				tablePanel.add(scroll);
+				backgroundPanel.add(tablePanel, GBC);
+		// Search Panel
+				JPanel searchPanel = new JPanel();
+				GBC.gridx = 0;
+				GBC.gridy = 4;
+				searchPanel.setBackground(Color.WHITE);
+				backgroundPanel.add(searchPanel, GBC);
+			// Search Label
+				JLabel searchLabel = new JLabel("Search By: ");
+		        String s1[] = { "First Name", "Last Name", "Employee ID"}; 
+		        JComboBox cb = new JComboBox(s1); 
+		        searchPanel.add(searchLabel);
+		        searchPanel.add(cb);
+		        JTextField enterField = new JTextField(15);
+		        searchPanel.add(enterField);
+		        JButton search = new JButton("search");
+		        searchPanel.add(search);
+		// Frame stuff		
+				searchFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				searchFrame.setSize(FRAMEX,FRAMEY);		
 		}
 		// Edit GUI-------------------------------------------------------------------------------------------------------------------
 		private void editGUI()
@@ -224,21 +265,21 @@ public class JEmployeeDB implements ActionListener{
 		// login GUI actions	
 			if (event.getSource() == loginButton || event.getSource() == passwordField) {
 				loginFrame.setVisible(false);
-				menuFrame.setVisible(true);
+				searchFrame.setVisible(true);
 			}
 		// Menu GUI actions
 			if (event.getSource() == createEmployee) {
 				createFormFrame.setVisible(true);
-				menuFrame.setVisible(false);
+				searchFrame.setVisible(false);
 			}
 			else if (event.getSource() == logOff) {
 				loginFrame.setVisible(true);
-				menuFrame.setVisible(false);
+				searchFrame.setVisible(false);
 			}
 		//	Create GUI Action
 			if (event.getSource() == goBack) {
 				createFormFrame.setVisible(false);
-				menuFrame.setVisible(true);
+				searchFrame.setVisible(true);
 			}
 		}
 }
