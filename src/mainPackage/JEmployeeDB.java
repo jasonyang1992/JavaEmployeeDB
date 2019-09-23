@@ -22,10 +22,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
+import javax.swing.table.DefaultTableModel;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -53,10 +55,11 @@ public class JEmployeeDB implements ActionListener {
 	private JButton deleteEmployee = new JButton("Delete");
 	private JButton logOff = new JButton("Log Off");
 	private JButton editEmployee = new JButton("Edit");
-	private final String searchString[] = { "Employee ID", "First Name", "Last Name" };
-	private String dataInfo[][] = { { "101", "Amit", "670000" } };
-	private String columnTitle[] = { "ID", "NAME", "SALARY" };
-	private JTable eTable = new JTable(dataInfo, columnTitle);
+	private final String searchString[] = { "Employee ID", "First Name", "Last Name"};
+	
+    private DefaultTableModel jTableModel = new DefaultTableModel(new String[]{"Employee ID", "First Name", "last Name", "Job TItle", "Salary", "DoB"}, 0);
+	private JTable eTable = new JTable(jTableModel);
+
 	private JComboBox searchbox = new JComboBox(searchString);
 	private JTextField searchField = new JTextField(15);
 	private JButton search = new JButton("search");
@@ -205,6 +208,7 @@ public class JEmployeeDB implements ActionListener {
 		formPanel.add(goBackC);
 		goBackC.addActionListener(this);
 		formPanel.add(createC);
+		createC.addActionListener(this);
 
 		// Frame stuff
 		createFormFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -259,8 +263,7 @@ public class JEmployeeDB implements ActionListener {
 		GBC.ipadx = 0;
 		GBC.ipady = 0;
 		// jt.setPreferredScrollableViewportSize(jt.getPreferredSize());
-		JScrollPane scroll = new JScrollPane(eTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		JScrollPane scroll = new JScrollPane(eTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scroll.setPreferredSize(new Dimension(500, 120));
 		tablePanel.add(scroll);
 		backgroundPanel.add(tablePanel, GBC);
@@ -276,6 +279,7 @@ public class JEmployeeDB implements ActionListener {
 		searchPanel.add(searchbox);
 		searchPanel.add(searchField);
 		searchPanel.add(search);
+		search.addActionListener(this);
 		// Frame stuff
 		searchFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		searchFrame.setSize(FRAMEX, FRAMEY);
@@ -368,7 +372,7 @@ public class JEmployeeDB implements ActionListener {
 				state = conn.createStatement();
 
 				rs = state.executeQuery("SELECT * FROM UserName");
-
+			// Loop to determine valid username and password
 				try {
 					do {
 						rs.next();
@@ -378,17 +382,17 @@ public class JEmployeeDB implements ActionListener {
 						grabUsernameGUI = loginField.getText();
 					} while (!grabUsernameGUI.equals(grabUserNameDB) && !grabPasswordGUI.equals(grabPasswordDB));
 				} catch (Exception e) {
-					JOptionPane.showMessageDialog(null, "Failed to login, invalid username or password!");
+					
 				}
 
 				if (grabUsernameGUI.equals(grabUserNameDB) && grabPasswordGUI.equals(grabPasswordDB)) {
 					JOptionPane.showMessageDialog(null, "Successfully login!");
-					grabPasswordDB = null;
-					passwordField.setText(null);
+					grabPasswordDB = null; // wipe password variable 
+					passwordField.setText(null); // reset the password field to null
 					loginFrame.setVisible(false);
 					searchFrame.setVisible(true);
 				} else {
-					JOptionPane.showMessageDialog(null, "Failed to login, invalid username or password!");
+					JOptionPane.showMessageDialog(null, "Failed to login, invalid username or password!", "Error Message",JOptionPane.ERROR_MESSAGE);
 					grabPasswordDB = null;
 					passwordField.setText(null);
 				}
@@ -409,6 +413,7 @@ public class JEmployeeDB implements ActionListener {
 				} catch (SQLException sqlex) {
 					sqlex.printStackTrace();
 				}
+		
 			}
 		}
 		// search GUI actions
@@ -418,13 +423,113 @@ public class JEmployeeDB implements ActionListener {
 		} else if (event.getSource() == editEmployee) {
 			editFrame.setVisible(true);
 			searchFrame.setVisible(false);
+		} else if (event.getSource() == search) {
+			Connection conn = null;
+			Statement state = null;
+			ResultSet rs = null;
+			int tableRowCounter = 0;
+			// Register Oracle JDBC driver class
+			try {
+
+				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
+			} catch (ClassNotFoundException cnfex) {
+
+				System.out.println("Problem in loading or registering MS Access JDBC driver");
+				cnfex.printStackTrace();
+			}
+
+			try {
+				File dbFile = new File("EmployeeDB.accdb");
+				String msAccDB = dbFile.getAbsolutePath();
+				String dbURL = "jdbc:ucanaccess://" + msAccDB;
+
+				conn = DriverManager.getConnection(dbURL);
+
+				state = conn.createStatement();
+			// SQL Command
+				rs = state.executeQuery("SELECT * FROM EmployeeTable");			
+			// Determine how many rows are there in the Table	
+				tableRowCounter = eTable.getRowCount();
+			// Check if there is previous data in the row and delete them
+				for(int i = 0; i<tableRowCounter; i++) {
+					jTableModel.removeRow(0);
+				}
+			// Loads data from MS access database	
+				while(rs.next()) {
+					String grabDBData [] = {rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6)};
+					jTableModel.addRow(grabDBData);
+				}
+				
+				
+			} catch (SQLException sqlex) {
+				sqlex.printStackTrace();
+			}
+			jTableModel.fireTableDataChanged();
 		} else if (event.getSource() == logOff) {
 			loginFrame.setVisible(true);
 			searchFrame.setVisible(false);
 			JOptionPane.showMessageDialog(null, "You have logged off sucessfully!");
 		}
 		// Create GUI Action
-		if (event.getSource() == goBackC) {
+		if (event.getSource() == createC) {
+			Connection conn = null;
+			String insertQuery;
+			// Register Oracle JDBC driver class
+			try {
+
+				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
+			} catch (ClassNotFoundException cnfex) {
+
+				System.out.println("Problem in loading or registering MS Access JDBC driver");
+				cnfex.printStackTrace();
+			}
+
+			try {
+				File dbFile = new File("EmployeeDB.accdb");
+				String msAccDB = dbFile.getAbsolutePath();
+				String dbURL = "jdbc:ucanaccess://" + msAccDB;
+
+				conn = DriverManager.getConnection(dbURL);
+
+				insertQuery = "INSERT INTO EmployeeTable ([EmployeeID], [FName], [LName], [JobTitle], [Salary], [DoB]) VALUES (?, ?, ?, ?, ?, ?)";
+				PreparedStatement st = conn.prepareStatement (insertQuery);
+				st.setString(1, null);
+				st.setString(2, fNameFieldC.getText());
+				st.setString(3, lNameFieldC.getText());
+				st.setString(4, eTitleFieldC.getText());
+				st.setString(5, salaryFieldC.getText());
+				st.setString(6, dOBFieldC.getText());
+				
+					st.executeUpdate();
+
+					JOptionPane.showMessageDialog(null, "Data has been enter!");
+					
+					fNameFieldC.setText(null);
+					lNameFieldC.setText(null);
+					eTitleFieldC.setText(null);
+					salaryFieldC.setText(null);
+					dOBFieldC.setText(null);
+
+			} catch (SQLException sqlex) {
+				sqlex.printStackTrace();
+			} finally {
+			/*	// Step 3: Closing database connection
+				try {
+					if (null != conn) {
+						// cleanup resources, once after processing
+						rs.close();
+						state.close();
+
+						// and then finally close connection
+						conn.close();
+					}
+				} catch (SQLException sqlex) {
+					sqlex.printStackTrace();
+				}*/
+			}
+			
+		}
+		else if (event.getSource() == goBackC) {
 			createFormFrame.setVisible(false);
 			searchFrame.setVisible(true);
 		}
