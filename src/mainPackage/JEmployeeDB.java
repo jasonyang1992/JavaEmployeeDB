@@ -21,7 +21,10 @@ import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.border.Border;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 
 import java.io.File;
@@ -88,7 +91,8 @@ public class JEmployeeDB implements ActionListener {
 	private JLabel dOBLabelE = new JLabel("Date of Birth:");
 	private JTextField dOBFieldE = new JTextField();
 	private JButton goBackE = new JButton("Go Back");
-	private JButton editE = new JButton("Edit Employee");
+	private JButton updateE = new JButton("Update Employee");
+	private String employeeIDHolder;
 // Database Variables
 	// Login Variables
 	private String grabUserNameDB;
@@ -263,6 +267,18 @@ public class JEmployeeDB implements ActionListener {
 		GBC.ipadx = 0;
 		GBC.ipady = 0;
 		// jt.setPreferredScrollableViewportSize(jt.getPreferredSize());
+		eTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+		eTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+		    @Override
+		    public void valueChanged(ListSelectionEvent event) {
+		        if (eTable.getSelectedRow() > 0) {
+		            // print first column value from selected row
+		        	employeeIDHolder = eTable.getValueAt(eTable.getSelectedRow(), 0).toString();
+		        }
+		    }
+		});
+		
 		JScrollPane scroll = new JScrollPane(eTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scroll.setPreferredSize(new Dimension(500, 120));
 		tablePanel.add(scroll);
@@ -337,7 +353,8 @@ public class JEmployeeDB implements ActionListener {
 		// Buttons return && create
 		formPanel.add(goBackE);
 		goBackE.addActionListener(this);
-		formPanel.add(editE);
+		formPanel.add(updateE);
+		updateE.addActionListener(this);
 		// Frame stuff
 		editFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		editFrame.setSize(FRAMEX, FRAMEY);
@@ -423,7 +440,53 @@ public class JEmployeeDB implements ActionListener {
 		} else if (event.getSource() == editEmployee) {
 			editFrame.setVisible(true);
 			searchFrame.setVisible(false);
-		} else if (event.getSource() == search) {
+		} 
+		else if (event.getSource() == deleteEmployee) {
+			Connection conn = null;
+			Statement state = null;
+			ResultSet rs = null;
+			String updateQuery;
+
+			// Register Oracle JDBC driver class
+			try {
+
+				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
+			} catch (ClassNotFoundException cnfex) {
+
+				System.out.println("Problem in loading or registering MS Access JDBC driver");
+				cnfex.printStackTrace();
+			}
+
+			try {
+				File dbFile = new File("EmployeeDB.accdb");
+				String msAccDB = dbFile.getAbsolutePath();
+				String dbURL = "jdbc:ucanaccess://" + msAccDB;
+
+				conn = DriverManager.getConnection(dbURL);
+
+				state = conn.createStatement();
+			// SQL Command
+				rs = state.executeQuery("SELECT * FROM EmployeeTable");	
+				updateQuery = "DELETE FROM EmployeeTable WHERE EmployeeID = " + eTable.getValueAt(eTable.getSelectedRow(), 0).toString() ;
+				PreparedStatement st = conn.prepareStatement (updateQuery);
+
+			// Loads data from MS access database	
+				while(rs.next()) {
+					if (rs.getString(1).equals(eTable.getValueAt(eTable.getSelectedRow(), 0).toString())) {
+					st.executeUpdate();
+					}
+				}
+			// Delete the row section	
+			if (eTable.getSelectedRow() != -1) {
+	            // remove selected row from the model
+	            jTableModel.removeRow(eTable.getSelectedRow());
+	        }
+				
+			} catch (SQLException sqlex) {
+				sqlex.printStackTrace();
+			}
+		}
+		else if (event.getSource() == search) {
 			Connection conn = null;
 			Statement state = null;
 			ResultSet rs = null;
@@ -538,9 +601,45 @@ public class JEmployeeDB implements ActionListener {
 			editFrame.setVisible(false);
 			searchFrame.setVisible(true);
 		}
-		// Search GUI Actions
-		if (event.getSource() == search) {
-			
+		else if (event.getSource() == updateE && !employeeIDHolder.equals(null)) {
+			System.out.println(employeeIDHolder);
+			Connection conn = null;
+
+			String updateQuery;
+
+			// Register Oracle JDBC driver class
+			try {
+
+				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
+			} catch (ClassNotFoundException cnfex) {
+
+				System.out.println("Problem in loading or registering MS Access JDBC driver");
+				cnfex.printStackTrace();
+			}
+
+			try {
+				File dbFile = new File("EmployeeDB.accdb");
+				String msAccDB = dbFile.getAbsolutePath();
+				String dbURL = "jdbc:ucanaccess://" + msAccDB;
+
+				conn = DriverManager.getConnection(dbURL);
+
+			// SQL Command
+				
+				updateQuery = "UPDATE EmployeeTable SET FName=?, LName=?, JobTitle=?, Salary=?, DoB=? WHERE EmployeeID=" + employeeIDHolder;
+				PreparedStatement st = conn.prepareStatement (updateQuery);
+
+				st.setString(1, fNameFieldE.getText());
+				st.setString(2, lNameFieldE.getText());
+				st.setString(3, eTitleFieldE.getText());
+				st.setString(4, salaryFieldE.getText());
+				st.setString(5, dOBFieldE.getText());
+
+				st.executeUpdate();
+				
+			} catch (SQLException sqlex) {
+				sqlex.printStackTrace();
+			}
 		}
 	}
 }
