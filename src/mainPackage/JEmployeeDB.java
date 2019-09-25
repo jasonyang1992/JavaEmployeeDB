@@ -58,7 +58,7 @@ public class JEmployeeDB implements ActionListener {
 	private JButton deleteEmployee = new JButton("Delete");
 	private JButton logOff = new JButton("Log Off");
 	private JButton editEmployee = new JButton("Edit");
-	private final String SEARCHSTRING[] = { "All", "Employee ID"};
+	private final String SEARCHSTRING[] = { "All", "Employee ID", "First Name", "Last Name"};
 	
     private DefaultTableModel jTableModel = new DefaultTableModel(new String[]{"Employee ID", "First Name", "last Name", "Job TItle", "Salary", "DoB"}, 0);
 	private JTable eTable = new JTable(jTableModel);
@@ -525,6 +525,12 @@ public class JEmployeeDB implements ActionListener {
 					}
 					else if (boxSelection.equals("Employee ID")) {
 						rs = state.executeQuery("SELECT * FROM EmployeeTable WHERE EmployeeID=" + searchField.getText());			
+					}
+					else if (boxSelection.equals("First Name")) {
+						rs = state.executeQuery("SELECT * FROM EmployeeTable WHERE FName='" + searchField.getText() + "'");		
+					}
+					else if (boxSelection.equals("Last Name")) {
+						rs = state.executeQuery("SELECT * FROM EmployeeTable WHERE LName='" + searchField.getText() + "'");		
 					}
 				}
 				catch(Exception e) {
