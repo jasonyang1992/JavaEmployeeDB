@@ -58,12 +58,12 @@ public class JEmployeeDB implements ActionListener {
 	private JButton deleteEmployee = new JButton("Delete");
 	private JButton logOff = new JButton("Log Off");
 	private JButton editEmployee = new JButton("Edit");
-	private final String searchString[] = { "Employee ID", "First Name", "Last Name"};
+	private final String SEARCHSTRING[] = { "All", "Employee ID"};
 	
     private DefaultTableModel jTableModel = new DefaultTableModel(new String[]{"Employee ID", "First Name", "last Name", "Job TItle", "Salary", "DoB"}, 0);
 	private JTable eTable = new JTable(jTableModel);
 
-	private JComboBox searchbox = new JComboBox(searchString);
+	private final JComboBox SEARCHBOX = new JComboBox(SEARCHSTRING);
 	private JTextField searchField = new JTextField(15);
 	private JButton search = new JButton("search");
 // Create Frame Variables
@@ -92,7 +92,7 @@ public class JEmployeeDB implements ActionListener {
 	private JTextField dOBFieldE = new JTextField();
 	private JButton goBackE = new JButton("Go Back");
 	private JButton updateE = new JButton("Update Employee");
-	private String employeeIDHolder;
+	private String employeeIDHolder = "novalue"; // reset the null value for editing
 // Database Variables
 	// Login Variables
 	private String grabUserNameDB;
@@ -250,8 +250,7 @@ public class JEmployeeDB implements ActionListener {
 		GBC.ipadx = 150;
 		GBC.ipady = 15;
 		backgroundPanel.add(buttonPanel, GBC);
-		// Button
-
+	// Buttons
 		buttonPanel.add(createEmployee);
 		createEmployee.addActionListener(this);
 		buttonPanel.add(editEmployee);
@@ -268,7 +267,7 @@ public class JEmployeeDB implements ActionListener {
 		GBC.ipady = 0;
 		// jt.setPreferredScrollableViewportSize(jt.getPreferredSize());
 		eTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
+// Action listener for sing selection
 		eTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 		    @Override
 		    public void valueChanged(ListSelectionEvent event) {
@@ -278,9 +277,9 @@ public class JEmployeeDB implements ActionListener {
 		        }
 		    }
 		});
-		
+// Create Scroll for table		
 		JScrollPane scroll = new JScrollPane(eTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		scroll.setPreferredSize(new Dimension(500, 120));
+		scroll.setPreferredSize(new Dimension(500, 120)); // Size of Table
 		tablePanel.add(scroll);
 		backgroundPanel.add(tablePanel, GBC);
 		// Search Panel
@@ -292,8 +291,9 @@ public class JEmployeeDB implements ActionListener {
 		// Search Label
 		JLabel searchLabel = new JLabel("Search By: ");
 		searchPanel.add(searchLabel);
-		searchPanel.add(searchbox);
+		searchPanel.add(SEARCHBOX);
 		searchPanel.add(searchField);
+		searchField.addActionListener(this);
 		searchPanel.add(search);
 		search.addActionListener(this);
 		// Frame stuff
@@ -435,18 +435,23 @@ public class JEmployeeDB implements ActionListener {
 		}
 		// search GUI actions
 		if (event.getSource() == createEmployee) {
-			createFormFrame.setVisible(true);
-			searchFrame.setVisible(false);
+			createFormFrame.setVisible(true); // Go to Create Form GUI
+			searchFrame.setVisible(false); // Remove previous Frame
 		} else if (event.getSource() == editEmployee) {
-			editFrame.setVisible(true);
-			searchFrame.setVisible(false);
-		} 
+			if (employeeIDHolder.equals("novalue")) {
+				JOptionPane.showMessageDialog(null, "Please select an employee from the table!");
+			}
+			else {
+				editFrame.setVisible(true);
+				searchFrame.setVisible(false);// Remove previous Frame
+			}
+		}
 		else if (event.getSource() == deleteEmployee) {
 			Connection conn = null;
 			Statement state = null;
 			ResultSet rs = null;
 			String updateQuery;
-
+/*--------------------------------------------------------------------------------------------------------------------------
 			// Register Oracle JDBC driver class
 			try {
 
@@ -456,7 +461,7 @@ public class JEmployeeDB implements ActionListener {
 				System.out.println("Problem in loading or registering MS Access JDBC driver");
 				cnfex.printStackTrace();
 			}
-
+--------------------------------------------------------------------------------------------------------------------------*/
 			try {
 				File dbFile = new File("EmployeeDB.accdb");
 				String msAccDB = dbFile.getAbsolutePath();
@@ -476,21 +481,22 @@ public class JEmployeeDB implements ActionListener {
 					st.executeUpdate();
 					}
 				}
-			// Delete the row section	
+			// Delete the row section to reflect database
 			if (eTable.getSelectedRow() != -1) {
 	            // remove selected row from the model
 	            jTableModel.removeRow(eTable.getSelectedRow());
 	        }
-				
+			employeeIDHolder = "novalue";
 			} catch (SQLException sqlex) {
 				sqlex.printStackTrace();
 			}
 		}
-		else if (event.getSource() == search) {
+		else if (event.getSource() == search || event.getSource() == searchField) {
 			Connection conn = null;
 			Statement state = null;
 			ResultSet rs = null;
 			int tableRowCounter = 0;
+/*------------------------------------------------------------------------------------------------------------------				
 			// Register Oracle JDBC driver class
 			try {
 
@@ -500,7 +506,7 @@ public class JEmployeeDB implements ActionListener {
 				System.out.println("Problem in loading or registering MS Access JDBC driver");
 				cnfex.printStackTrace();
 			}
-
+------------------------------------------------------------------------------------------------------------------*/
 			try {
 				File dbFile = new File("EmployeeDB.accdb");
 				String msAccDB = dbFile.getAbsolutePath();
@@ -509,8 +515,21 @@ public class JEmployeeDB implements ActionListener {
 				conn = DriverManager.getConnection(dbURL);
 
 				state = conn.createStatement();
-			// SQL Command
-				rs = state.executeQuery("SELECT * FROM EmployeeTable");			
+				
+				String boxSelection = SEARCHBOX.getSelectedItem().toString();
+				
+				try {
+					if (boxSelection.equals("All")) {
+						// SQL Command to search for all
+						rs = state.executeQuery("SELECT * FROM EmployeeTable");			
+					}
+					else if (boxSelection.equals("Employee ID")) {
+						rs = state.executeQuery("SELECT * FROM EmployeeTable WHERE EmployeeID=" + searchField.getText());			
+					}
+				}
+				catch(Exception e) {
+					JOptionPane.showMessageDialog(null, "You have enter an invalid search or cannot be found");
+				}
 			// Determine how many rows are there in the Table	
 				tableRowCounter = eTable.getRowCount();
 			// Check if there is previous data in the row and delete them
@@ -523,7 +542,7 @@ public class JEmployeeDB implements ActionListener {
 					jTableModel.addRow(grabDBData);
 				}
 				
-				
+				employeeIDHolder = "novalue";	// reset the null value for editing
 			} catch (SQLException sqlex) {
 				sqlex.printStackTrace();
 			}
@@ -537,6 +556,7 @@ public class JEmployeeDB implements ActionListener {
 		if (event.getSource() == createC) {
 			Connection conn = null;
 			String insertQuery;
+/*------------------------------------------------------------------------------------------------------------------			
 			// Register Oracle JDBC driver class
 			try {
 
@@ -546,32 +566,33 @@ public class JEmployeeDB implements ActionListener {
 				System.out.println("Problem in loading or registering MS Access JDBC driver");
 				cnfex.printStackTrace();
 			}
-
+------------------------------------------------------------------------------------------------------------------*/
 			try {
 				File dbFile = new File("EmployeeDB.accdb");
 				String msAccDB = dbFile.getAbsolutePath();
 				String dbURL = "jdbc:ucanaccess://" + msAccDB;
 
 				conn = DriverManager.getConnection(dbURL);
-
+			// SQL command
 				insertQuery = "INSERT INTO EmployeeTable ([EmployeeID], [FName], [LName], [JobTitle], [Salary], [DoB]) VALUES (?, ?, ?, ?, ?, ?)";
 				PreparedStatement st = conn.prepareStatement (insertQuery);
+			// Grab the data from the text field	
 				st.setString(1, null);
 				st.setString(2, fNameFieldC.getText());
 				st.setString(3, lNameFieldC.getText());
 				st.setString(4, eTitleFieldC.getText());
 				st.setString(5, salaryFieldC.getText());
 				st.setString(6, dOBFieldC.getText());
-				
-					st.executeUpdate();
-
-					JOptionPane.showMessageDialog(null, "Data has been enter!");
-					
-					fNameFieldC.setText(null);
-					lNameFieldC.setText(null);
-					eTitleFieldC.setText(null);
-					salaryFieldC.setText(null);
-					dOBFieldC.setText(null);
+			// Run command
+				st.executeUpdate();
+			// Pop up confirmation
+				JOptionPane.showMessageDialog(null, "Data has been enter!");
+			// Empty values in fields	
+				fNameFieldC.setText(null);
+				lNameFieldC.setText(null);
+				eTitleFieldC.setText(null);
+				salaryFieldC.setText(null);
+				dOBFieldC.setText(null);
 
 			} catch (SQLException sqlex) {
 				sqlex.printStackTrace();
@@ -601,12 +622,12 @@ public class JEmployeeDB implements ActionListener {
 			editFrame.setVisible(false);
 			searchFrame.setVisible(true);
 		}
-		else if (event.getSource() == updateE && !employeeIDHolder.equals(null)) {
-			System.out.println(employeeIDHolder);
+		else if (event.getSource() == updateE) {
+
 			Connection conn = null;
 
 			String updateQuery;
-
+/*------------------------------------------------------------------------------------------------------------------
 			// Register Oracle JDBC driver class
 			try {
 
@@ -616,7 +637,7 @@ public class JEmployeeDB implements ActionListener {
 				System.out.println("Problem in loading or registering MS Access JDBC driver");
 				cnfex.printStackTrace();
 			}
-
+------------------------------------------------------------------------------------------------------------------*/
 			try {
 				File dbFile = new File("EmployeeDB.accdb");
 				String msAccDB = dbFile.getAbsolutePath();
@@ -628,15 +649,27 @@ public class JEmployeeDB implements ActionListener {
 				
 				updateQuery = "UPDATE EmployeeTable SET FName=?, LName=?, JobTitle=?, Salary=?, DoB=? WHERE EmployeeID=" + employeeIDHolder;
 				PreparedStatement st = conn.prepareStatement (updateQuery);
-
+				
+			// Set data into Database
 				st.setString(1, fNameFieldE.getText());
 				st.setString(2, lNameFieldE.getText());
 				st.setString(3, eTitleFieldE.getText());
 				st.setString(4, salaryFieldE.getText());
 				st.setString(5, dOBFieldE.getText());
-
+			// Execute the update
 				st.executeUpdate();
-				
+			// Pop up confirmation
+				JOptionPane.showMessageDialog(null, "Data has been updated!");	
+			// Empty values in fields	
+				fNameFieldE.setText(null);
+				lNameFieldE.setText(null);
+				eTitleFieldE.setText(null);
+				salaryFieldE.setText(null);
+				dOBFieldE.setText(null);
+
+				employeeIDHolder = "novalue"; // reset the null value for editing
+				editFrame.setVisible(false);
+				searchFrame.setVisible(true);
 			} catch (SQLException sqlex) {
 				sqlex.printStackTrace();
 			}
