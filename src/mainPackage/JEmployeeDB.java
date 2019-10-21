@@ -30,7 +30,6 @@ import javax.swing.table.DefaultTableModel;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -93,12 +92,6 @@ public class JEmployeeDB implements ActionListener {
 	private JButton goBackE = new JButton("Go Back");
 	private JButton updateE = new JButton("Update Employee");
 	private String employeeIDHolder = "novalue"; // reset the null value for editing
-// Database Variables
-	// Login Variables
-	private String grabUserNameDB;
-	private String grabPasswordDB;
-	private String grabUsernameGUI;
-	private String grabPasswordGUI;
 
 	// initialize the
 	// GUI-------------------------------------------------------------------------------------------------------------
@@ -365,72 +358,17 @@ public class JEmployeeDB implements ActionListener {
 	public void actionPerformed(ActionEvent event) {
 		// login GUI actions
 		if (event.getSource() == loginButton || event.getSource() == passwordField) {
-			Connection conn = null;
-			Statement state = null;
-			ResultSet rs = null;
-
-			// Register Oracle JDBC driver class
-			try {
-
-				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
-			} catch (ClassNotFoundException cnfex) {
-
-				System.out.println("Problem in loading or registering MS Access JDBC driver");
-				cnfex.printStackTrace();
-			}
-
-			try {
-				File dbFile = new File("EmployeeDB.accdb");
-				String msAccDB = dbFile.getAbsolutePath();
-				String dbURL = "jdbc:ucanaccess://" + msAccDB;
-
-				conn = DriverManager.getConnection(dbURL);
-
-				state = conn.createStatement();
-
-				rs = state.executeQuery("SELECT * FROM UserName");
-			// Loop to determine valid username and password
-				try {
-					do {
-						rs.next();
-						grabUserNameDB = rs.getString(2);
-						grabPasswordDB = rs.getString(3);
-						grabPasswordGUI = String.valueOf(passwordField.getPassword());
-						grabUsernameGUI = loginField.getText();
-					} while (!grabUsernameGUI.equals(grabUserNameDB) && !grabPasswordGUI.equals(grabPasswordDB));
-				} catch (Exception e) {
-					
-				}
-
-				if (grabUsernameGUI.equals(grabUserNameDB) && grabPasswordGUI.equals(grabPasswordDB)) {
-					JOptionPane.showMessageDialog(null, "Successfully login!");
-					grabPasswordDB = null; // wipe password variable 
-					passwordField.setText(null); // reset the password field to null
-					loginFrame.setVisible(false);
-					searchFrame.setVisible(true);
-				} else {
-					JOptionPane.showMessageDialog(null, "Failed to login, invalid username or password!", "Error Message",JOptionPane.ERROR_MESSAGE);
-					grabPasswordDB = null;
-					passwordField.setText(null);
-				}
-
-			} catch (SQLException sqlex) {
-				sqlex.printStackTrace();
-			} finally {
-				// Step 3: Closing database connection
-				try {
-					if (null != conn) {
-						// cleanup resources, once after processing
-						rs.close();
-						state.close();
-
-						// and then finally close connection
-						conn.close();
-					}
-				} catch (SQLException sqlex) {
-					sqlex.printStackTrace();
-				}
-		
+				
+			DBConnection dbc = new DBConnection(); // Creates Database Connection
+			// Pass user login information && Password to the database connection	
+			if (dbc.readUP(loginField.getText(), String.valueOf(passwordField.getPassword())) == true) {
+				JOptionPane.showMessageDialog(null, "Successfully login!");
+				passwordField.setText(null); // reset the password field to null
+				loginFrame.setVisible(false);
+				searchFrame.setVisible(true);
+			} else {
+				JOptionPane.showMessageDialog(null, "Failed to login, invalid username or password!", "Error Message",JOptionPane.ERROR_MESSAGE);
+				passwordField.setText(null);
 			}
 		}
 		// search GUI actions
@@ -447,66 +385,23 @@ public class JEmployeeDB implements ActionListener {
 			}
 		}
 		else if (event.getSource() == deleteEmployee) {
-			Connection conn = null;
-			Statement state = null;
-			ResultSet rs = null;
-			String updateQuery;
-/*--------------------------------------------------------------------------------------------------------------------------
-			// Register Oracle JDBC driver class
-			try {
-
-				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
-			} catch (ClassNotFoundException cnfex) {
-
-				System.out.println("Problem in loading or registering MS Access JDBC driver");
-				cnfex.printStackTrace();
-			}
---------------------------------------------------------------------------------------------------------------------------*/
-			try {
-				File dbFile = new File("EmployeeDB.accdb");
-				String msAccDB = dbFile.getAbsolutePath();
-				String dbURL = "jdbc:ucanaccess://" + msAccDB;
-
-				conn = DriverManager.getConnection(dbURL);
-
-				state = conn.createStatement();
-			// SQL Command
-				rs = state.executeQuery("SELECT * FROM EmployeeTable");	
-				updateQuery = "DELETE FROM EmployeeTable WHERE EmployeeID = " + eTable.getValueAt(eTable.getSelectedRow(), 0).toString() ;
-				PreparedStatement st = conn.prepareStatement (updateQuery);
-
-			// Loads data from MS access database	
-				while(rs.next()) {
-					if (rs.getString(1).equals(eTable.getValueAt(eTable.getSelectedRow(), 0).toString())) {
-					st.executeUpdate();
-					}
-				}
+			
+			DBConnection dbc = new DBConnection();
+			dbc.deleteData(eTable.getValueAt(eTable.getSelectedRow(), 0).toString());
+			
 			// Delete the row section to reflect database
 			if (eTable.getSelectedRow() != -1) {
 	            // remove selected row from the model
 	            jTableModel.removeRow(eTable.getSelectedRow());
 	        }
-			employeeIDHolder = "novalue";
-			} catch (SQLException sqlex) {
-				sqlex.printStackTrace();
-			}
+
 		}
 		else if (event.getSource() == search || event.getSource() == searchField) {
 			Connection conn = null;
 			Statement state = null;
 			ResultSet rs = null;
 			int tableRowCounter = 0;
-/*------------------------------------------------------------------------------------------------------------------				
-			// Register Oracle JDBC driver class
-			try {
 
-				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
-			} catch (ClassNotFoundException cnfex) {
-
-				System.out.println("Problem in loading or registering MS Access JDBC driver");
-				cnfex.printStackTrace();
-			}
-------------------------------------------------------------------------------------------------------------------*/
 			try {
 				File dbFile = new File("EmployeeDB.accdb");
 				String msAccDB = dbFile.getAbsolutePath();
@@ -560,64 +455,18 @@ public class JEmployeeDB implements ActionListener {
 		}
 		// Create GUI Action
 		if (event.getSource() == createC) {
-			Connection conn = null;
-			String insertQuery;
-/*------------------------------------------------------------------------------------------------------------------			
-			// Register Oracle JDBC driver class
-			try {
-
-				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
-			} catch (ClassNotFoundException cnfex) {
-
-				System.out.println("Problem in loading or registering MS Access JDBC driver");
-				cnfex.printStackTrace();
-			}
-------------------------------------------------------------------------------------------------------------------*/
-			try {
-				File dbFile = new File("EmployeeDB.accdb");
-				String msAccDB = dbFile.getAbsolutePath();
-				String dbURL = "jdbc:ucanaccess://" + msAccDB;
-
-				conn = DriverManager.getConnection(dbURL);
-			// SQL command
-				insertQuery = "INSERT INTO EmployeeTable ([EmployeeID], [FName], [LName], [JobTitle], [Salary], [DoB]) VALUES (?, ?, ?, ?, ?, ?)";
-				PreparedStatement st = conn.prepareStatement (insertQuery);
-			// Grab the data from the text field	
-				st.setString(1, null);
-				st.setString(2, fNameFieldC.getText());
-				st.setString(3, lNameFieldC.getText());
-				st.setString(4, eTitleFieldC.getText());
-				st.setString(5, salaryFieldC.getText());
-				st.setString(6, dOBFieldC.getText());
-			// Run command
-				st.executeUpdate();
-			// Pop up confirmation
-				JOptionPane.showMessageDialog(null, "Data has been enter!");
-			// Empty values in fields	
-				fNameFieldC.setText(null);
-				lNameFieldC.setText(null);
-				eTitleFieldC.setText(null);
-				salaryFieldC.setText(null);
-				dOBFieldC.setText(null);
-
-			} catch (SQLException sqlex) {
-				sqlex.printStackTrace();
-			} finally {
-			/*	// Step 3: Closing database connection
-				try {
-					if (null != conn) {
-						// cleanup resources, once after processing
-						rs.close();
-						state.close();
-
-						// and then finally close connection
-						conn.close();
-					}
-				} catch (SQLException sqlex) {
-					sqlex.printStackTrace();
-				}*/
-			}
+		// Database Connection
+			DBConnection dbc = new DBConnection();
 			
+		// grab text field 	info and pass it to the database
+			dbc.insertData(fNameFieldC.getText(), lNameFieldC.getText(), eTitleFieldC.getText(), salaryFieldC.getText(), dOBFieldC.getText());
+			
+		// Empty values in fields	
+			fNameFieldC.setText(null);
+			lNameFieldC.setText(null);
+			eTitleFieldC.setText(null);
+			salaryFieldC.setText(null);
+			dOBFieldC.setText(null);	
 		}
 		else if (event.getSource() == goBackC) {
 			createFormFrame.setVisible(false);
@@ -630,55 +479,20 @@ public class JEmployeeDB implements ActionListener {
 		}
 		else if (event.getSource() == updateE) {
 
-			Connection conn = null;
-
-			String updateQuery;
-/*------------------------------------------------------------------------------------------------------------------
-			// Register Oracle JDBC driver class
-			try {
-
-				Class.forName("net.ucanaccess.jdbc.UcanaccessDriver");
-			} catch (ClassNotFoundException cnfex) {
-
-				System.out.println("Problem in loading or registering MS Access JDBC driver");
-				cnfex.printStackTrace();
-			}
-------------------------------------------------------------------------------------------------------------------*/
-			try {
-				File dbFile = new File("EmployeeDB.accdb");
-				String msAccDB = dbFile.getAbsolutePath();
-				String dbURL = "jdbc:ucanaccess://" + msAccDB;
-
-				conn = DriverManager.getConnection(dbURL);
-
-			// SQL Command
-				
-				updateQuery = "UPDATE EmployeeTable SET FName=?, LName=?, JobTitle=?, Salary=?, DoB=? WHERE EmployeeID=" + employeeIDHolder;
-				PreparedStatement st = conn.prepareStatement (updateQuery);
-				
-			// Set data into Database
-				st.setString(1, fNameFieldE.getText());
-				st.setString(2, lNameFieldE.getText());
-				st.setString(3, eTitleFieldE.getText());
-				st.setString(4, salaryFieldE.getText());
-				st.setString(5, dOBFieldE.getText());
-			// Execute the update
-				st.executeUpdate();
-			// Pop up confirmation
-				JOptionPane.showMessageDialog(null, "Data has been updated!");	
-			// Empty values in fields	
-				fNameFieldE.setText(null);
-				lNameFieldE.setText(null);
-				eTitleFieldE.setText(null);
-				salaryFieldE.setText(null);
-				dOBFieldE.setText(null);
-
-				employeeIDHolder = "novalue"; // reset the null value for editing
-				editFrame.setVisible(false);
-				searchFrame.setVisible(true);
-			} catch (SQLException sqlex) {
-				sqlex.printStackTrace();
-			}
+			DBConnection dbc = new DBConnection();
+			dbc.editData(employeeIDHolder, fNameFieldE.getText(), lNameFieldE.getText(), eTitleFieldE.getText(), salaryFieldE.getText(), dOBFieldE.getText());
+			
+		// Empty values in fields	
+			fNameFieldE.setText(null);
+			lNameFieldE.setText(null);
+			eTitleFieldE.setText(null);
+			salaryFieldE.setText(null);
+			dOBFieldE.setText(null);
+			
+			employeeIDHolder = "novalue"; // reset the null value for editing
+		// Return	
+			editFrame.setVisible(false);
+			searchFrame.setVisible(true);
 		}
 	}
 }
